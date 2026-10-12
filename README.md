@@ -64,10 +64,21 @@ math-column-racing/
 ├── README.md        # 项目说明文档
 └── LICENSE          # 开源许可证（可选）
 ```
+## 🎮 游戏预览
+
+![课堂竖式计算竞速游戏主界面](images/game-preview.png)
+
+### 游戏画面
+
+![竖式计算游戏过程](images/gameplay.png)
+
+### 比赛结算
+
+![比赛结束后的排名界面](images/game-result.png)
 
 ## 📌 项目状态
 
-当前版本：2.6
+当前版本：2.0
 
 项目仍可继续完善，欢迎提交建议、反馈问题或参与改进。
 
