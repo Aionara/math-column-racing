@@ -72,9 +72,6 @@ math-column-racing/
 
 ![竖式计算游戏过程](images/gameplay.png)
 
-### 设置界面
-
-![设置界面](images/game-result.png)
 
 ## 📌 项目状态
 
