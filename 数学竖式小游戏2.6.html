@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课堂竖式计算竞速小游戏</title>
+  <style>
+    :root {
+      --bg-main: #14382c;
+      --bg-card: #1d4e3d;
+      --bg-panel: #245d49;
+      --accent-yellow: #ffdf40;
+      --accent-gold: #f59e0b;
+      --text-main: #f0fdf4;
+      --text-muted: #bbf7d0;
+      --border-color: #3b8266;
+      --cell-size: 52px;
+      --font-scale: 22px;
+      --math-font-family: "Courier New", Courier, Consolas, monospace;
+      --math-font-weight: bold;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航 */
+    header {
+      background: rgba(15, 43, 34, 0.95);
+      border-bottom: 2px solid var(--border-color);
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+
+    .title-group h1 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent-yellow);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .timer-display {
+      font-size: 1.4rem;
+      font-family: "Courier New", Courier, monospace;
+      font-weight: bold;
+      background: #0d281e;
+      padding: 4px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--accent-yellow);
+      color: var(--accent-yellow);
+      min-width: 100px;
+      text-align: center;
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-weight: bold;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #10b981; color: #fff; }
+    .btn-primary:hover { background: #059669; }
+    .btn-secondary { background: #334155; color: #f8fafc; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-warning { background: var(--accent-gold); color: #000; }
+    .btn-warning:hover { background: #d97706; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+
+    /* 主视口区域 */
+    main {
+      flex: 1;
+      padding: 10px 14px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    .view-section {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+    .view-section.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: 100%;
+    }
+
+    /* 设置界面 */
+    #viewSettings {
+      overflow-y: auto;
+    }
+
+    .settings-container {
+      max-width: 880px;
+      margin: 10px auto;
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 22px 30px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      width: 100%;
+    }
+
+    .settings-container h2 {
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+      color: var(--accent-yellow);
+      font-size: 1.25rem;
+    }
+
+    .setting-row {
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setting-label {
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .radio-option {
+      cursor: pointer;
+      background: #14382c;
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+
+    .radio-option.selected {
+      background: var(--accent-yellow);
+      color: #14382c;
+      font-weight: bold;
+      border-color: var(--accent-yellow);
+    }
+
+    .custom-input-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #14382c;
+      border: 1px solid var(--border-color);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .custom-input-box input {
+      width: 60px;
+      background: #0d281e;
+      border: 1px solid var(--border-color);
+      color: var(--accent-yellow);
+      font-weight: bold;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      text-align: center;
+      outline: none;
+    }
+
+    .audio-config-card {
+      background: #14382c;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .audio-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+      padding-bottom: 8px;
+    }
+    .audio-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .audio-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .audio-ops {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-select-btn {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .file-select-btn input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .audio-name-tag {
+      font-size: 0.78rem;
+      color: var(--accent-yellow);
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .settings-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 16px;
+    }
+
+    /* 竞赛网格 */
+    .arena-grid {
+      display: grid;
+      gap: 14px;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+    }
+
+    .arena-grid.players-2 { grid-template-columns: repeat(2, 1fr); }
+    .arena-grid.players-3 { grid-template-columns: repeat(3, 1fr); }
+    .arena-grid.players-4 { grid-template-columns: repeat(4, 1fr); }
+
+    /* 选手卡片 */
+    .player-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 3px solid #3b8266;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      position: relative;
+      height: 100%;
+    }
+
+    .player-p1 { border-color: #ef4444; }
+    .player-p2 { border-color: #3b82f6; }
+    .player-p3 { border-color: #a855f7; }
+    .player-p4 { border-color: #f97316; }
+
+    .player-header {
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+
+    .player-tag {
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+
+    .player-progress {
+      font-size: 0.95rem;
+      background: rgba(0,0,0,0.3);
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-family: monospace;
+    }
+
+    .player-body {
+      flex: 1;
+      padding: 10px 14px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .prompt-banner {
+      font-size: clamp(1rem, 1.8vh, 1.25rem);
+      font-weight: var(--math-font-weight);
+      font-family: var(--math-font-family);
+      color: var(--accent-yellow);
+      background: #0d281e;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border-left: 4px solid var(--accent-yellow);
+      width: 100%;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* 竖式计算渲染区 */
+    .worksheet-wrap {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f2c22;
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px dashed var(--border-color);
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .math-grid {
+      display: grid;
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+      font-family: var(--math-font-family);
+      font-size: var(--font-scale);
+      font-weight: var(--math-font-weight);
+    }
+
+    .grid-cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .grid-cell.mark-cell {
+      height: clamp(16px, 2.2vh, 24px);
+      cursor: pointer;
+    }
+
+    .mark-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px dashed #528670;
+      transition: all 0.15s;
+    }
+
+    .mark-dot.carry {
+      background: #ef4444;
+      border: 1px solid #fee2e2;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+    }
+
+    .mark-dot.borrow {
+      background: #3b82f6;
+      border: 1px solid #dbeafe;
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+    }
+
+    .grid-cell.op {
+      font-size: 1.15em;
+      color: var(--accent-yellow);
+    }
+
+    .grid-cell.input-cell {
+      background: #1e3a2f;
+      border: 2px solid #528670;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-weight: var(--math-font-weight);
+    }
+
+    .grid-cell.input-cell.active-focus {
+      border: 2px solid var(--accent-yellow);
+      background: #364e43;
+      box-shadow: 0 0 10px rgba(255, 223, 64, 0.75);
+    }
+
+    .grid-divider {
+      height: 3px;
+      background: #e2e8f0;
+      grid-column: 1 / -1;
+      margin: 4px 0;
+      border-radius: 2px;
+    }
+
+    .status-banner {
+      width: 100%;
+      min-height: 24px;
+      font-size: clamp(0.85rem, 1.4vh, 1rem);
+      font-weight: bold;
+      text-align: center;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .status-banner.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+    .status-banner.success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid #10b981;
+    }
+
+    /* 虚拟数字键盘 */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 300px;
+      flex-shrink: 0;
+    }
+
+    .key-btn {
+      background: #2a6953;
+      border: 1px solid #3d886d;
+      color: #fff;
+      font-size: clamp(1.1rem, 1.8vh, 1.3rem);
+      font-weight: bold;
+      padding: clamp(7px, 1.3vh, 12px) 0;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, transform 0.05s;
+    }
+
+    .key-btn:active {
+      background: #1b4d3c;
+      transform: scale(0.95);
+    }
+
+    .key-btn.action {
+      background: #3b574d;
+      font-size: clamp(0.9rem, 1.4vh, 1.05rem);
+    }
+
+    .key-btn.submit {
+      background: #10b981;
+      grid-column: span 3;
+      font-size: clamp(0.95rem, 1.5vh, 1.15rem);
+      padding: clamp(8px, 1.4vh, 13px) 0;
+      color: #fff;
+    }
+    .key-btn.submit:hover {
+      background: #059669;
+    }
+
+    .player-finished-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 43, 34, 0.94);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 10;
+    }
+    .player-finished-overlay h3 {
+      font-size: 1.6rem;
+      color: var(--accent-yellow);
+    }
+
+    .settlement-container {
+      max-width: 740px;
+      margin: 30px auto;
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 26px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .settlement-container h2 {
+      font-size: 1.6rem;
+      color: var(--accent-yellow);
+      margin-bottom: 20px;
+    }
+
+    .rank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .rank-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      background: #14382c;
+      border-radius: 8px;
+      border-left: 6px solid #ccc;
+    }
+
+    .rank-item.gold { border-left-color: #fbbf24; }
+    .rank-item.silver { border-left-color: #94a3b8; }
+    .rank-item.bronze { border-left-color: #d97706; }
+
+    .rank-pos {
+      font-size: 1.2rem;
+      font-weight: 800;
+      width: 50px;
+      text-align: left;
+    }
+    .rank-info {
+      font-weight: bold;
+      font-size: 1rem;
+      flex: 1;
+      text-align: left;
+    }
+    .rank-stat {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部栏 -->
+  <header>
+    <div class="title-group">
+      <span>📐</span>
+      <h1>课堂竖式计算竞速</h1>
+    </div>
+    <div class="header-controls">
+      <div id="gameStatusTag" style="font-size: 0.9rem; font-weight: bold; color: var(--text-muted);">准备中</div>
+      <div id="timerDisplay" class="timer-display">00:00</div>
+      <button id="headerSettingsBtn" class="btn btn-secondary">比赛设置</button>
+      <button id="headerRestartBtn" class="btn btn-warning" style="display:none;">重开一局</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 设置界面 -->
+    <section id="viewSettings" class="view-section active">
+      <div class="settings-container">
+        <h2>比赛规则设置</h2>
+
+        <div class="setting-row">
+          <div class="setting-label">1. 参赛人数</div>
+          <div class="radio-group" data-key="playerCount">
+            <div class="radio-option" data-val="2">2 人 PK</div>
+            <div class="radio-option selected" data-val="3">3 人 PK</div>
+            <div class="radio-option" data-val="4">4 人 PK</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">2. 出题模式</div>
+          <div class="radio-group" data-key="mode">
+            <div class="radio-option selected" data-val="same">同题竞速（完全相同）</div>
+            <div class="radio-option" data-val="random">随机出题（独立题目）</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">3. 题型与竖式法则</div>
+          <div class="radio-group" data-key="opType">
+            <div class="radio-option" data-val="add_sub">单步加减法</div>
+            <div class="radio-option" data-val="mul_div">单步乘除法</div>
+            <div class="radio-option" data-val="continuous_mix">加减连续竖式（三数纵向连算）</div>
+            <div class="radio-option" data-val="step_hybrid">乘除加减分步竖式（先乘除后加减）</div>
+            <div class="radio-option selected" data-val="mul_multi_no_carry">多位数乘两位数连续竖式（无进位）</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">4. 数字含 0 限制 (题目与过程)</div>
+          <div class="radio-group" data-key="zeroRule">
+            <div class="radio-option" data-val="allow">允许含 0</div>
+            <div class="radio-option selected" data-val="disallow">排除含 0（严格纯数字 1-9）</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">5. 计算类型</div>
+          <div class="radio-group" data-key="numberType">
+            <div class="radio-option selected" data-val="int">整数</div>
+            <div class="radio-option" data-val="dec">小数</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">6. 题目数量控制</div>
+          <div class="radio-group" data-key="qCount">
+            <div class="radio-option" data-val="1">1 题</div>
+            <div class="radio-option selected" data-val="3">3 题</div>
+            <div class="radio-option" data-val="5">5 题</div>
+            <div class="radio-option" data-val="10">10 题</div>
+            <div class="radio-option" data-val="custom">自定义</div>
+            <div class="custom-input-box" id="qCountCustomBox" style="display:none;">
+              <input type="number" id="customQCountInput" min="1" max="99" value="8">
+              <span>题</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">7. 答题时限控制</div>
+          <div class="radio-group" data-key="timeLimit">
+            <div class="radio-option selected" data-val="0">不限时</div>
+            <div class="radio-option" data-val="60">1 分钟</div>
+            <div class="radio-option" data-val="180">3 分钟</div>
+            <div class="radio-option" data-val="300">5 分钟</div>
+            <div class="radio-option" data-val="custom">自定义</div>
+            <div class="custom-input-box" id="timeLimitCustomBox" style="display:none;">
+              <input type="number" id="customMinutesInput" min="0" max="60" value="2" style="width:45px;">
+              <span>分</span>
+              <input type="number" id="customSecondsInput" min="0" max="59" value="30" style="width:45px;">
+              <span>秒</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">8. 竖式难度 (常规加减乘除生效)</div>
+          <div class="radio-group" data-key="difficulty">
+            <div class="radio-option selected" data-val="easy">基础（两位数易算）</div>
+            <div class="radio-option" data-val="medium">进阶（多位数与借进位）</div>
+          </div>
+        </div>
+
+        <!-- 音频与自定义音效模块 -->
+        <div class="setting-row">
+          <div class="setting-label">9. 音频与自定义音效</div>
+          <div class="radio-group" data-key="sound">
+            <div class="radio-option selected" data-val="on">音效开启</div>
+            <div class="radio-option" data-val="off">静音模式</div>
+          </div>
+
+          <div class="audio-config-card">
+            <div class="audio-item">
+              <div class="audio-desc">
+                <span>🎵 背景音乐 (BGM):</span>
+                <span id="bgmFileName" class="audio-name-tag">默认未启用</span>
+              </div>
+              <div class="audio-ops">
+                <label class="btn btn-secondary btn-sm file-select-btn">
+                  选择本地音频
+                  <input type="file" id="bgmFileInput" accept="audio/*">
+                </label>
+                <button type="button" id="previewBgmBtn" class="btn btn-secondary btn-sm" style="display:none;">试听</button>
+                <button type="button" id="clearBgmBtn" class="btn btn-secondary btn-sm" style="display:none;">清除</button>
+              </div>
+            </div>
+
+            <div class="audio-item">
+              <div class="audio-desc">
+                <span>🔊 BGM 音量:</span>
+                <span id="bgmVolumeVal" style="font-family:monospace; color:var(--accent-yellow);">35%</span>
+              </div>
+              <div class="audio-ops">
+                <input type="range" id="bgmVolumeRange" min="0" max="100" value="35" style="width: 130px; cursor: pointer;">
+              </div>
+            </div>
+
+            <div class="audio-item">
+              <div class="audio-desc">
+                <span>🎺 胜利/结算音效:</span>
+                <span id="winFileName" class="audio-name-tag">默认合成音阶</span>
+              </div>
+              <div class="audio-ops">
+                <label class="btn btn-secondary btn-sm file-select-btn">
+                  选择本地音频
+                  <input type="file" id="winFileInput" accept="audio/*">
+                </label>
+                <button type="button" id="previewWinBtn" class="btn btn-secondary btn-sm" style="display:none;">试听</button>
+                <button type="button" id="clearWinBtn" class="btn btn-secondary btn-sm" style="display:none;">还原</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10. 显示设置（包含：字号、加粗、字体族选择） -->
+        <div class="setting-row">
+          <div class="setting-label">10. 显示设置</div>
+          
+          <!-- 字号 -->
+          <div class="radio-group" data-key="fontSize">
+            <div class="radio-option" data-val="normal">普通字号 (20px)</div>
+            <div class="radio-option selected" data-val="large">大字号 (28px)</div>
+            <div class="radio-option" data-val="custom">自定义字号</div>
+            <div class="custom-input-box" id="fontSizeCustomBox" style="display:none;">
+              <input type="number" id="customFontSizeInput" min="14" max="60" value="26">
+              <span>px</span>
+            </div>
+          </div>
+
+          <!-- 加粗开关 -->
+          <div class="radio-group" data-key="fontWeight" style="margin-top:6px;">
+            <div class="radio-option selected" data-val="bold">字重：加粗 (推荐)</div>
+            <div class="radio-option" data-val="normal">字重：常规 (不加粗)</div>
+          </div>
+
+          <!-- 字体族选择 -->
+          <div class="radio-group" data-key="fontFamily" style="margin-top:6px;">
+            <div class="radio-option selected" data-val="mono">等宽黑板体 (Courier/Monospace)</div>
+            <div class="radio-option" data-val="sans">现代黑体 (微软雅黑/苹方)</div>
+            <div class="radio-option" data-val="kai">规范楷体 (KaiTi/教材仿手写)</div>
+            <div class="radio-option" data-val="round">圆润圆体 (Rounded)</div>
+            <div class="radio-option" data-val="serif">正统宋体 (SongTi/Serif)</div>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button id="applySettingsBtn" class="btn btn-secondary">应用设置</button>
+          <button id="startFromSettingsBtn" class="btn btn-primary" style="font-size:1.1rem; padding:10px 24px;">开始比赛</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 比赛界面 -->
+    <section id="viewArena" class="view-section">
+      <div id="arenaGrid" class="arena-grid"></div>
+    </section>
+
+    <!-- 结算界面 -->
+    <section id="viewSettlement" class="view-section">
+      <div class="settlement-container">
+        <h2>🏆 比赛结果结算</h2>
+        <div id="rankList" class="rank-list"></div>
+        <div style="display:flex; justify-content:center; gap:16px;">
+          <button id="settleRestartBtn" class="btn btn-warning">再来一局</button>
+          <button id="settleToSettingsBtn" class="btn btn-secondary">返回设置</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SoundFx = {
+      ctx: null,
+      enabled: true,
+      bgmAudio: new Audio(),
+      winAudio: new Audio(),
+      bgmBlobUrl: null,
+      winBlobUrl: null,
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        this.bgmAudio.loop = true;
+      },
+
+      playTone(freq, type, duration) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      },
+
+      correct() {
+        this.playTone(587, 'triangle', 0.1);
+        setTimeout(() => this.playTone(880, 'triangle', 0.18), 90);
+      },
+
+      wrong() {
+        this.playTone(220, 'sawtooth', 0.22);
+      },
+
+      playBgm() {
+        if (!this.enabled || !this.bgmBlobUrl) return;
+        this.bgmAudio.currentTime = 0;
+        this.bgmAudio.play().catch(() => {});
+      },
+
+      pauseBgm() {
+        this.bgmAudio.pause();
+      },
+
+      setBgmVolume(val) {
+        this.bgmAudio.volume = Math.max(0, Math.min(1, val));
+      },
+
+      win() {
+        if (!this.enabled) return;
+        this.pauseBgm();
+
+        if (this.winBlobUrl) {
+          this.winAudio.currentTime = 0;
+          this.winAudio.play().catch(() => {});
+          return;
+        }
+
+        [523, 659, 784, 1046].forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'sine', 0.22), i * 110);
+        });
+      }
+    };
+
+    const Config = {
+      playerCount: 3,
+      mode: 'same',
+      opType: 'mul_multi_no_carry',
+      zeroRule: 'disallow',
+      numberType: 'int',
+      qCount: 3,
+      qCountCustom: 8,
+      difficulty: 'easy',
+      timeLimit: 0,
+      timeLimitCustomSec: 150,
+      fontSize: 'large',
+      fontSizeCustomPx: 26,
+      fontWeight: 'bold',
+      fontFamily: 'mono',
+      sound: 'on',
+      bgmVolume: 0.35
+    };
+
+    const GameState = {
+      status: 'READY',
+      elapsed: 0,
+      timerId: null,
+      players: []
+    };
+
+    const PLAYER_INFO = [
+      { id: 0, name: '红队', colorClass: 'player-p1' },
+      { id: 1, name: '蓝队', colorClass: 'player-p2' },
+      { id: 2, name: '紫队', colorClass: 'player-p3' },
+      { id: 3, name: '橙队', colorClass: 'player-p4' }
+    ];
+
+    const MathCore = {
+      countDecimals(num) {
+        const str = num.toString();
+        return str.indexOf('.') !== -1 ? str.split('.')[1].length : 0;
+      },
+      add(a, b) {
+        const factor = Math.pow(10, Math.max(this.countDecimals(a), this.countDecimals(b)));
+        return (Math.round(a * factor) + Math.round(b * factor)) / factor;
+      },
+      sub(a, b) {
+        const factor = Math.pow(10, Math.max(this.countDecimals(a), this.countDecimals(b)));
+        return (Math.round(a * factor) - Math.round(b * factor)) / factor;
+      },
+      mul(a, b) {
+        const factor1 = Math.pow(10, this.countDecimals(a));
+        const factor2 = Math.pow(10, this.countDecimals(b));
+        return (Math.round(a * factor1) * Math.round(b * factor2)) / (factor1 * factor2);
+      }
+    };
+
+    const QuestionEngine = {
+      randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      },
+
+      generate(cfg) {
+        const isDec = cfg.numberType === 'dec';
+        if (cfg.opType === 'mul_multi_no_carry') return this.buildMulMultiNoCarry(cfg, isDec);
+        if (cfg.opType === 'continuous_mix') return this.buildContinuousAddSub(cfg, isDec);
+        if (cfg.opType === 'step_hybrid') return this.buildStepHybrid(cfg, isDec);
+        if (cfg.opType === 'add_sub') {
+          return Math.random() < 0.5 ? this.buildAdd(cfg, isDec) : this.buildSub(cfg, isDec);
+        }
+        return this.buildMul(cfg, isDec);
+      },
+
+      buildMulMultiNoCarry(cfg, isDec) {
+        let attempts = 0;
+        let numA = 0, numB = 0;
+        const disallowZero = (cfg.zeroRule === 'disallow');
+
+        while (attempts < 1000) {
+          attempts++;
+
+          const minB = 1;
+          const maxB = 3;
+          const bTen = this.randInt(minB, maxB);
+          const bOne = this.randInt(minB, maxB);
+          numB = bTen * 10 + bOne;
+
+          const lenA = Math.random() < 0.85 ? 3 : 2;
+          let digitsA = [];
+          for (let i = 0; i < lenA; i++) {
+            const maxD = Math.floor(9 / Math.max(bTen, bOne));
+            const minD = disallowZero ? 1 : ((i === 0) ? 1 : 0);
+            digitsA.push(this.randInt(minD, Math.max(minD, maxD)));
+          }
+          numA = parseInt(digitsA.join(''), 10);
+
+          const part1 = numA * bOne;
+          const part2 = numA * bTen;
+          const part2Shifted = part2 * 10;
+          const total = part1 + part2Shifted;
+
+          const s1 = part1.toString();
+          const s2 = (part2.toString() + '0');
+          const maxL = Math.max(s1.length, s2.length);
+          const padS1 = s1.padStart(maxL, '0');
+          const padS2 = s2.padStart(maxL, '0');
+          let hasCarry = false;
+          for (let c = 0; c < maxL; c++) {
+            if (parseInt(padS1[c], 10) + parseInt(padS2[c], 10) >= 10) {
+              hasCarry = true;
+              break;
+            }
+          }
+
+          if (hasCarry || total !== numA * numB) continue;
+
+          if (disallowZero) {
+            const strA = numA.toString();
+            const strB = numB.toString();
+            const strP1 = part1.toString();
+            const strP2 = part2.toString();
+            const strTot = total.toString();
+
+            if (strA.includes('0') || strB.includes('0') ||
+                strP1.includes('0') || strP2.includes('0') ||
+                strTot.includes('0')) {
+              continue;
+            }
+          }
+
+          break;
+        }
+
+        let actualA = isDec ? numA / 10 : numA;
+        let finalAns = MathCore.mul(actualA, numB);
+
+        return {
+          type: 'mul_multi_no_carry',
+          formula: `${actualA} × ${numB} = ?`,
+          isDec,
+          data: {
+            op: '×',
+            numA: actualA,
+            numB: numB,
+            ans: finalAns
+          }
+        };
+      },
+
+      buildContinuousAddSub(cfg, isDec) {
+        const min = cfg.difficulty === 'easy' ? 20 : 100;
+        const max = cfg.difficulty === 'easy' ? 99 : 600;
+
+        let a = this.randInt(min, max);
+        let b = this.randInt(min, max);
+        const op1 = Math.random() < 0.5 ? '+' : '-';
+        if (op1 === '-' && a < b) [a, b] = [b, a];
+
+        let mid = op1 === '+' ? a + b : a - b;
+
+        const op2 = Math.random() < 0.5 ? '+' : '-';
+        let c = this.randInt(10, Math.min(mid, max));
+        if (op2 === '-' && mid <= c) c = Math.floor(mid / 2);
+
+        let finalAns = op2 === '+' ? mid + c : mid - c;
+
+        let numA = isDec ? a / 10 : a;
+        let numB = isDec ? b / 10 : b;
+        let numC = isDec ? c / 10 : c;
+        let midVal = isDec ? MathCore[op1 === '+' ? 'add' : 'sub'](numA, numB) : mid;
+        let ansVal = isDec ? MathCore[op2 === '+' ? 'add' : 'sub'](midVal, numC) : finalAns;
+
+        return {
+          type: 'continuous_add_sub',
+          formula: `${numA} ${op1} ${numB} ${op2} ${numC} = ?`,
+          isDec,
+          data: { numA, op1, numB, midVal, op2, numC, ansVal }
+        };
+      },
+
+      buildStepHybrid(cfg, isDec) {
+        const m1 = this.randInt(12, 45);
+        const m2 = this.randInt(2, 9);
+        const mulRes = m1 * m2;
+        const addNum = this.randInt(20, 99);
+        const finalAns = mulRes + addNum;
+
+        return {
+          type: 'step_hybrid',
+          formula: `${m1} × ${m2} + ${addNum} = ?`,
+          isDec: false,
+          currentSubStep: 0,
+          stepsData: [
+            {
+              op: '×',
+              numA: m1,
+              numB: m2,
+              ans: mulRes,
+              title: `第一步（按运算顺序先算乘法）：${m1} × ${m2}`
+            },
+            {
+              op: '+',
+              numA: mulRes,
+              numB: addNum,
+              ans: finalAns,
+              title: `第二步（将乘积与后数相加）：${mulRes} + ${addNum}`
+            }
+          ]
+        };
+      },
+
+      buildAdd(cfg, isDec) {
+        const min = cfg.difficulty === 'easy' ? 20 : 120;
+        const max = cfg.difficulty === 'easy' ? 99 : 800;
+        let a = this.randInt(min, max);
+        let b = this.randInt(min, max);
+        if (isDec) { a /= 10; b /= 10; }
+        return {
+          type: 'single',
+          formula: `${a} + ${b} = ?`,
+          isDec,
+          data: { op: '+', numA: a, numB: b, ans: MathCore.add(a, b) }
+        };
+      },
+
+      buildSub(cfg, isDec) {
+        const min = cfg.difficulty === 'easy' ? 30 : 200;
+        const max = cfg.difficulty === 'easy' ? 99 : 900;
+        let a = this.randInt(min, max);
+        let b = this.randInt(10, a - 1);
+        if (isDec) { a /= 10; b /= 10; }
+        return {
+          type: 'single',
+          formula: `${a} - ${b} = ?`,
+          isDec,
+          data: { op: '-', numA: a, numB: b, ans: MathCore.sub(a, b) }
+        };
+      },
+
+      buildMul(cfg, isDec) {
+        let a = this.randInt(12, 99);
+        let b = this.randInt(2, cfg.difficulty === 'easy' ? 9 : 25);
+        let actualA = isDec ? a / 10 : a;
+        return {
+          type: 'single',
+          formula: `${actualA} × ${b} = ?`,
+          isDec,
+          data: { op: '×', numA: actualA, numB: b, ans: MathCore.mul(actualA, b) }
+        };
+      }
+    };
+
+    /**
+     * 选手控制器
+     */
+    class PlayerController {
+      constructor(info, questions) {
+        this.info = info;
+        this.questions = questions;
+        this.currentIndex = 0;
+        this.finished = false;
+        this.finishTime = 0;
+        this.userInputs = {};
+        this.activeCellKey = null;
+        this.activeInputKeys = [];
+        this.dom = null;
+      }
+
+      initDOM(container) {
+        const card = document.createElement('div');
+        card.className = `player-card ${this.info.colorClass}`;
+        card.id = `playerCard_${this.info.id}`;
+
+        card.innerHTML = `
+          <div class="player-header">
+            <div class="player-tag">${this.info.name}</div>
+            <div class="player-progress" id="pProg_${this.info.id}">0 / ${this.questions.length}</div>
+          </div>
+          <div class="player-body">
+            <div class="prompt-banner" id="pFormula_${this.info.id}">算式加载中</div>
+            <div class="worksheet-wrap" id="pSheet_${this.info.id}"></div>
+            <div class="status-banner" id="pStatus_${this.info.id}"></div>
+            <div class="keypad" id="pKeypad_${this.info.id}"></div>
+          </div>
+          <div class="player-finished-overlay" id="pOverlay_${this.info.id}" style="display:none;">
+            <h3>已完成所有题目!</h3>
+            <p id="pFinishTimeText_${this.info.id}"></p>
+          </div>
+        `;
+
+        container.appendChild(card);
+        this.dom = {
+          card,
+          prog: card.querySelector(`#pProg_${this.info.id}`),
+          formula: card.querySelector(`#pFormula_${this.info.id}`),
+          sheet: card.querySelector(`#pSheet_${this.info.id}`),
+          status: card.querySelector(`#pStatus_${this.info.id}`),
+          keypad: card.querySelector(`#pKeypad_${this.info.id}`),
+          overlay: card.querySelector(`#pOverlay_${this.info.id}`),
+          finishText: card.querySelector(`#pFinishTimeText_${this.info.id}`)
+        };
+
+        this.renderKeypad();
+        this.renderCurrentQuestion();
+      }
+
+      renderKeypad() {
+        const keys = [
+          '7', '8', '9',
+          '4', '5', '6',
+          '1', '2', '3',
+          '0', '退格', '清空'
+        ];
+        this.dom.keypad.innerHTML = '';
+        keys.forEach(k => {
+          const btn = document.createElement('button');
+          btn.className = `key-btn ${k === '退格' || k === '清空' ? 'action' : ''}`;
+          btn.textContent = k;
+          btn.type = 'button';
+          btn.onclick = () => this.handleKeyPress(k);
+          this.dom.keypad.appendChild(btn);
+        });
+
+        const subBtn = document.createElement('button');
+        subBtn.className = 'key-btn submit';
+        subBtn.textContent = '提交当前步骤 (Enter)';
+        subBtn.type = 'button';
+        subBtn.onclick = () => this.submitAnswer();
+        this.dom.keypad.appendChild(subBtn);
+      }
+
+      renderCurrentQuestion() {
+        if (this.currentIndex >= this.questions.length) {
+          this.markFinished();
+          return;
+        }
+
+        const q = this.questions[this.currentIndex];
+        this.dom.prog.textContent = `第 ${this.currentIndex + 1} / ${this.questions.length} 题`;
+        this.dom.formula.textContent = q.formula;
+        this.userInputs = {};
+        this.activeInputKeys = [];
+
+        this.buildWorksheet(q);
+        this.setStatus('数字从个位向高位填写；点击数位上方可标进/借位圆点', '');
+      }
+
+      buildWorksheet(q) {
+        this.dom.sheet.innerHTML = '';
+        if (q.type === 'continuous_add_sub') {
+          this.buildContinuousWorksheet(q);
+        } else if (q.type === 'step_hybrid') {
+          this.buildStepHybridWorksheet(q);
+        } else {
+          this.buildSingleWorksheet(q.data);
+        }
+
+        if (this.activeInputKeys.length > 0) {
+          this.setActiveCell(this.activeInputKeys[0]);
+        }
+      }
+
+      createMarkDot(markKey) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell mark-cell';
+        const dot = document.createElement('div');
+        dot.className = 'mark-dot';
+        dot.title = '点击标注: 红(进位) / 蓝(借位)';
+        dot.onclick = (e) => {
+          e.stopPropagation();
+          if (dot.classList.contains('carry')) {
+            dot.classList.remove('carry');
+            dot.classList.add('borrow');
+          } else if (dot.classList.contains('borrow')) {
+            dot.classList.remove('borrow');
+          } else {
+            dot.classList.add('carry');
+          }
+        };
+        cell.appendChild(dot);
+        return cell;
+      }
+
+      buildContinuousWorksheet(q) {
+        const d = q.data;
+        const strA = d.numA.toString();
+        const strB = d.numB.toString();
+        const strMid = d.midVal.toString();
+        const strC = d.numC.toString();
+        const strAns = d.ansVal.toString();
+
+        const maxLen = Math.max(strA.length, strB.length, strMid.length, strC.length, strAns.length) + 1;
+        const grid = document.createElement('div');
+        grid.className = 'math-grid';
+        grid.style.gridTemplateColumns = `repeat(${maxLen}, var(--cell-size))`;
+
+        const renderMarkRow = (tag) => {
+          for (let i = 0; i < maxLen; i++) {
+            grid.appendChild(this.createMarkDot(`${tag}_${i}`));
+          }
+        };
+
+        const renderRow = (str, opChar = '') => {
+          const chars = str.split('');
+          const pad = maxLen - chars.length;
+          for (let i = 0; i < maxLen; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (i === 0 && opChar) {
+              cell.textContent = opChar;
+              cell.classList.add('op');
+            } else if (i >= pad) {
+              cell.textContent = chars[i - pad];
+            }
+            grid.appendChild(cell);
+          }
+        };
+
+        const renderInputRow = (expectedStr, rowTag) => {
+          const chars = expectedStr.split('');
+          const pad = maxLen - chars.length;
+          const rowKeys = [];
+          for (let i = 0; i < maxLen; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (i >= pad) {
+              const charIdx = i - pad;
+              if (chars[charIdx] === '.') {
+                cell.textContent = '.';
+              } else {
+                cell.classList.add('input-cell');
+                const key = `${rowTag}_${charIdx}`;
+                cell.id = `cell_${this.info.id}_${key}`;
+                cell.onclick = () => this.setActiveCell(key);
+                rowKeys.push(key);
+              }
+            }
+            grid.appendChild(cell);
+          }
+          rowKeys.reverse().forEach(k => this.activeInputKeys.push(k));
+        };
+
+        renderMarkRow('mark_step1');
+        renderRow(strA);
+        renderRow(strB, d.op1);
+        const div1 = document.createElement('div');
+        div1.className = 'grid-divider';
+        grid.appendChild(div1);
+
+        renderInputRow(strMid, 'mid');
+
+        renderMarkRow('mark_step2');
+        renderRow(strC, d.op2);
+        const div2 = document.createElement('div');
+        div2.className = 'grid-divider';
+        grid.appendChild(div2);
+
+        renderInputRow(strAns, 'final');
+
+        this.dom.sheet.appendChild(grid);
+      }
+
+      buildStepHybridWorksheet(q) {
+        const sub = q.stepsData[q.currentSubStep];
+        this.dom.formula.textContent = sub.title;
+        this.buildSingleWorksheet(sub);
+      }
+
+      buildSingleWorksheet(d) {
+        const strA = d.numA.toString();
+        const strB = d.numB.toString();
+        const strAns = d.ans.toString();
+
+        let steps = [];
+
+        if (d.op === '×') {
+          const bStr = Math.round(d.numB).toString();
+          if (bStr.length > 1) {
+            for (let i = bStr.length - 1; i >= 0; i--) {
+              const digit = parseInt(bStr[i], 10);
+              const part = MathCore.mul(d.numA, digit);
+              steps.push({
+                tag: `part_${bStr.length - 1 - i}`,
+                exp: part.toString(),
+                shift: bStr.length - 1 - i
+              });
+            }
+          }
+          steps.push({ tag: 'final', exp: strAns, shift: 0 });
+        } else {
+          steps.push({ tag: 'final', exp: strAns, shift: 0 });
+        }
+
+        const maxLen = Math.max(strA.length, strB.length, strAns.length) + (d.op === '×' ? 2 : 1);
+        const grid = document.createElement('div');
+        grid.className = 'math-grid';
+        grid.style.gridTemplateColumns = `repeat(${maxLen}, var(--cell-size))`;
+
+        // 顶部进借位标记行
+        for (let i = 0; i < maxLen; i++) {
+          grid.appendChild(this.createMarkDot(`mark_top_${i}`));
+        }
+
+        const renderRow = (str, opChar = '') => {
+          const chars = str.split('');
+          const pad = maxLen - chars.length;
+          for (let i = 0; i < maxLen; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (i === 0 && opChar) {
+              cell.textContent = opChar;
+              cell.classList.add('op');
+            } else if (i >= pad) {
+              cell.textContent = chars[i - pad];
+            }
+            grid.appendChild(cell);
+          }
+        };
+
+        renderRow(strA);
+        renderRow(strB, d.op);
+
+        const div1 = document.createElement('div');
+        div1.className = 'grid-divider';
+        grid.appendChild(div1);
+
+        steps.forEach((st, sIdx) => {
+          const exp = st.exp;
+          const chars = exp.split('');
+          const pad = maxLen - chars.length - st.shift;
+          const rowKeys = [];
+
+          for (let i = 0; i < maxLen; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (i >= pad && i < pad + chars.length) {
+              const charIdx = i - pad;
+              if (chars[charIdx] === '.') {
+                cell.textContent = '.';
+              } else {
+                cell.classList.add('input-cell');
+                const key = `${st.tag}_${charIdx}`;
+                cell.id = `cell_${this.info.id}_${key}`;
+                cell.onclick = () => this.setActiveCell(key);
+                rowKeys.push(key);
+              }
+            }
+            grid.appendChild(cell);
+          }
+
+          rowKeys.reverse().forEach(k => this.activeInputKeys.push(k));
+
+          if (steps.length > 1 && sIdx === steps.length - 2) {
+            const divMid = document.createElement('div');
+            divMid.className = 'grid-divider';
+            grid.appendChild(divMid);
+          }
+        });
+
+        this.dom.sheet.appendChild(grid);
+      }
+
+      setActiveCell(cellKey) {
+        if (this.finished || GameState.status !== 'RUNNING') return;
+        if (this.activeCellKey) {
+          const old = document.getElementById(`cell_${this.info.id}_${this.activeCellKey}`);
+          if (old) old.classList.remove('active-focus');
+        }
+        this.activeCellKey = cellKey;
+        const current = document.getElementById(`cell_${this.info.id}_${cellKey}`);
+        if (current) current.classList.add('active-focus');
+      }
+
+      handleKeyPress(key) {
+        if (this.finished || GameState.status !== 'RUNNING' || !this.activeCellKey) return;
+
+        if (key === '退格') {
+          delete this.userInputs[this.activeCellKey];
+          this.updateCellDOM(this.activeCellKey, '');
+          this.moveFocus(-1);
+        } else if (key === '清空') {
+          this.activeInputKeys.forEach(k => {
+            delete this.userInputs[k];
+            this.updateCellDOM(k, '');
+          });
+          if (this.activeInputKeys.length > 0) {
+            this.setActiveCell(this.activeInputKeys[0]);
+          }
+        } else {
+          this.userInputs[this.activeCellKey] = key;
+          this.updateCellDOM(this.activeCellKey, key);
+          this.moveFocus(1);
+        }
+      }
+
+      updateCellDOM(cellKey, val) {
+        const el = document.getElementById(`cell_${this.info.id}_${cellKey}`);
+        if (el) el.textContent = val;
+      }
+
+      moveFocus(direction) {
+        const idx = this.activeInputKeys.indexOf(this.activeCellKey);
+        if (idx === -1) return;
+        const nextIdx = idx + direction;
+        if (nextIdx >= 0 && nextIdx < this.activeInputKeys.length) {
+          this.setActiveCell(this.activeInputKeys[nextIdx]);
+        }
+      }
+
+      submitAnswer() {
+        if (this.finished || GameState.status !== 'RUNNING') return;
+        const q = this.questions[this.currentIndex];
+
+        let isCorrect = true;
+        let isAllFilled = true;
+
+        if (q.type === 'continuous_add_sub') {
+          const midExp = q.data.midVal.toString().split('').filter(c => c !== '.');
+          const finalExp = q.data.ansVal.toString().split('').filter(c => c !== '.');
+
+          midExp.forEach((c, i) => {
+            const val = this.userInputs[`mid_${i}`];
+            if (val === undefined || val === '') isAllFilled = false;
+            if (val !== c) isCorrect = false;
+          });
+
+          finalExp.forEach((c, i) => {
+            const val = this.userInputs[`final_${i}`];
+            if (val === undefined || val === '') isAllFilled = false;
+            if (val !== c) isCorrect = false;
+          });
+        } else if (q.type === 'step_hybrid') {
+          const curSub = q.stepsData[q.currentSubStep];
+          const exp = curSub.ans.toString().split('').filter(c => c !== '.');
+          exp.forEach((c, i) => {
+            const val = this.userInputs[`final_${i}`];
+            if (val === undefined || val === '') isAllFilled = false;
+            if (val !== c) isCorrect = false;
+          });
+        } else if (q.type === 'mul_multi_no_carry' || q.data.op === '×') {
+          const d = q.data;
+          const bStr = Math.round(d.numB).toString();
+          if (bStr.length > 1) {
+            for (let i = bStr.length - 1; i >= 0; i--) {
+              const digit = parseInt(bStr[i], 10);
+              const part = MathCore.mul(d.numA, digit);
+              const partExp = part.toString().split('').filter(c => c !== '.');
+              const tag = `part_${bStr.length - 1 - i}`;
+              partExp.forEach((c, ci) => {
+                const val = this.userInputs[`${tag}_${ci}`];
+                if (val === undefined || val === '') isAllFilled = false;
+                if (val !== c) isCorrect = false;
+              });
+            }
+          }
+          const exp = d.ans.toString().split('').filter(c => c !== '.');
+          exp.forEach((c, i) => {
+            const val = this.userInputs[`final_${i}`];
+            if (val === undefined || val === '') isAllFilled = false;
+            if (val !== c) isCorrect = false;
+          });
+        } else {
+          const d = q.data;
+          const exp = d.ans.toString().split('').filter(c => c !== '.');
+          exp.forEach((c, i) => {
+            const val = this.userInputs[`final_${i}`];
+            if (val === undefined || val === '') isAllFilled = false;
+            if (val !== c) isCorrect = false;
+          });
+        }
+
+        if (!isAllFilled) {
+          this.setStatus('还有空格未填完！', 'error');
+          SoundFx.wrong();
+          return;
+        }
+
+        if (!isCorrect) {
+          this.setStatus('计算有误，请仔细验算并修改', 'error');
+          SoundFx.wrong();
+          return;
+        }
+
+        if (q.type === 'step_hybrid' && q.currentSubStep === 0) {
+          this.setStatus('第一步正确！进入加法运算', 'success');
+          SoundFx.correct();
+          q.currentSubStep = 1;
+          setTimeout(() => {
+            this.userInputs = {};
+            this.activeInputKeys = [];
+            this.buildWorksheet(q);
+            if (this.activeInputKeys.length > 0) {
+              this.setActiveCell(this.activeInputKeys[0]);
+            }
+          }, 350);
+          return;
+        }
+
+        this.setStatus('太棒了，全部正确！', 'success');
+        SoundFx.correct();
+        this.currentIndex++;
+        setTimeout(() => this.renderCurrentQuestion(), 350);
+      }
+
+      setStatus(msg, type) {
+        this.dom.status.textContent = msg;
+        this.dom.status.className = `status-banner ${type || ''}`;
+      }
+
+      markFinished() {
+        this.finished = true;
+        this.finishTime = GameState.elapsed;
+        this.dom.overlay.style.display = 'flex';
+        this.dom.finishText.textContent = `用时: ${formatTime(this.finishTime)}`;
+        checkAllFinished();
+      }
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function startTimer() {
+      stopTimer();
+      const display = document.getElementById('timerDisplay');
+      GameState.elapsed = 0;
+
+      const activeLimit = Config.timeLimit === 'custom' ? Config.timeLimitCustomSec : Config.timeLimit;
+
+      GameState.timerId = setInterval(() => {
+        if (GameState.status !== 'RUNNING') return;
+        GameState.elapsed++;
+        if (activeLimit > 0) {
+          const remain = activeLimit - GameState.elapsed;
+          if (remain <= 0) {
+            display.textContent = '00:00';
+            onTimeOut();
+            return;
+          }
+          display.textContent = formatTime(remain);
+        } else {
+          display.textContent = formatTime(GameState.elapsed);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (GameState.timerId) {
+        clearInterval(GameState.timerId);
+        GameState.timerId = null;
+      }
+    }
+
+    function onTimeOut() {
+      stopTimer();
+      GameState.status = 'TIMEOUT';
+      document.getElementById('gameStatusTag').textContent = '时间到！';
+      SoundFx.wrong();
+      SoundFx.pauseBgm();
+      showSettlement();
+    }
+
+    function checkAllFinished() {
+      const allDone = GameState.players.every(p => p.finished);
+      if (allDone) {
+        stopTimer();
+        GameState.status = 'FINISHED';
+        document.getElementById('gameStatusTag').textContent = '比赛结束';
+        SoundFx.win();
+        setTimeout(() => showSettlement(), 500);
+      }
+    }
+
+    function showSettlement() {
+      switchView('viewSettlement');
+      const rankListEl = document.getElementById('rankList');
+      rankListEl.innerHTML = '';
+
+      const sorted = [...GameState.players].sort((a, b) => {
+        if (a.finished && b.finished) return a.finishTime - b.finishTime;
+        if (a.finished) return -1;
+        if (b.finished) return 1;
+        return b.currentIndex - a.currentIndex;
+      });
+
+      const medals = ['gold', 'silver', 'bronze'];
+      const medalTexts = ['🥇 金牌', '🥈 银牌', '🥉 铜牌'];
+
+      sorted.forEach((p, idx) => {
+        const item = document.createElement('div');
+        item.className = `rank-item ${medals[idx] || ''}`;
+        const posText = idx < 3 ? medalTexts[idx] : `第 ${idx + 1} 名`;
+        const timeText = p.finished ? `完成用时: ${formatTime(p.finishTime)}` : '限时内未完成';
+
+        item.innerHTML = `
+          <div class="rank-pos">${posText}</div>
+          <div class="rank-info">${p.info.name}</div>
+          <div class="rank-stat">答对: ${p.currentIndex} 题 | ${timeText}</div>
+        `;
+        rankListEl.appendChild(item);
+      });
+    }
+
+    function initGame() {
+      setupUIEvents();
+      setupAudioEvents();
+      applySettings();
+    }
+
+    function setupAudioEvents() {
+      const bgmInput = document.getElementById('bgmFileInput');
+      const winInput = document.getElementById('winFileInput');
+      const previewBgmBtn = document.getElementById('previewBgmBtn');
+      const clearBgmBtn = document.getElementById('clearBgmBtn');
+      const previewWinBtn = document.getElementById('previewWinBtn');
+      const clearWinBtn = document.getElementById('clearWinBtn');
+      const bgmVolumeRange = document.getElementById('bgmVolumeRange');
+      const bgmVolumeVal = document.getElementById('bgmVolumeVal');
+
+      bgmInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (SoundFx.bgmBlobUrl) URL.revokeObjectURL(SoundFx.bgmBlobUrl);
+
+        SoundFx.bgmBlobUrl = URL.createObjectURL(file);
+        SoundFx.bgmAudio.src = SoundFx.bgmBlobUrl;
+        document.getElementById('bgmFileName').textContent = file.name;
+        previewBgmBtn.style.display = 'inline-flex';
+        clearBgmBtn.style.display = 'inline-flex';
+      };
+
+      let isPreviewingBgm = false;
+      previewBgmBtn.onclick = () => {
+        if (!isPreviewingBgm) {
+          SoundFx.bgmAudio.currentTime = 0;
+          SoundFx.bgmAudio.play();
+          previewBgmBtn.textContent = '停止';
+          isPreviewingBgm = true;
+        } else {
+          SoundFx.bgmAudio.pause();
+          previewBgmBtn.textContent = '试听';
+          isPreviewingBgm = false;
+        }
+      };
+
+      clearBgmBtn.onclick = () => {
+        SoundFx.bgmAudio.pause();
+        if (SoundFx.bgmBlobUrl) URL.revokeObjectURL(SoundFx.bgmBlobUrl);
+        SoundFx.bgmBlobUrl = null;
+        SoundFx.bgmAudio.removeAttribute('src');
+        bgmInput.value = '';
+        document.getElementById('bgmFileName').textContent = '默认未启用';
+        previewBgmBtn.style.display = 'none';
+        clearBgmBtn.style.display = 'none';
+        previewBgmBtn.textContent = '试听';
+        isPreviewingBgm = false;
+      };
+
+      winInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (SoundFx.winBlobUrl) URL.revokeObjectURL(SoundFx.winBlobUrl);
+
+        SoundFx.winBlobUrl = URL.createObjectURL(file);
+        SoundFx.winAudio.src = SoundFx.winBlobUrl;
+        document.getElementById('winFileName').textContent = file.name;
+        previewWinBtn.style.display = 'inline-flex';
+        clearWinBtn.style.display = 'inline-flex';
+      };
+
+      previewWinBtn.onclick = () => {
+        if (SoundFx.winBlobUrl) {
+          SoundFx.winAudio.currentTime = 0;
+          SoundFx.winAudio.play();
+        } else {
+          SoundFx.win();
+        }
+      };
+
+      clearWinBtn.onclick = () => {
+        SoundFx.winAudio.pause();
+        if (SoundFx.winBlobUrl) URL.revokeObjectURL(SoundFx.winBlobUrl);
+        SoundFx.winBlobUrl = null;
+        SoundFx.winAudio.removeAttribute('src');
+        winInput.value = '';
+        document.getElementById('winFileName').textContent = '默认合成音阶';
+        previewWinBtn.style.display = 'none';
+        clearWinBtn.style.display = 'none';
+      };
+
+      bgmVolumeRange.oninput = (e) => {
+        const val = parseInt(e.target.value, 10);
+        bgmVolumeVal.textContent = `${val}%`;
+        Config.bgmVolume = val / 100;
+        SoundFx.setBgmVolume(Config.bgmVolume);
+      };
+    }
+
+    function setupUIEvents() {
+      document.querySelectorAll('.radio-group').forEach(group => {
+        const key = group.dataset.key;
+        group.querySelectorAll('.radio-option').forEach(opt => {
+          opt.addEventListener('click', () => {
+            group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            Config[key] = isNaN(opt.dataset.val) ? opt.dataset.val : parseInt(opt.dataset.val, 10);
+
+            if (key === 'qCount') {
+              const customBox = document.getElementById('qCountCustomBox');
+              customBox.style.display = opt.dataset.val === 'custom' ? 'inline-flex' : 'none';
+            }
+
+            if (key === 'timeLimit') {
+              const customBox = document.getElementById('timeLimitCustomBox');
+              customBox.style.display = opt.dataset.val === 'custom' ? 'inline-flex' : 'none';
+            }
+
+            if (key === 'fontSize') {
+              const customBox = document.getElementById('fontSizeCustomBox');
+              customBox.style.display = opt.dataset.val === 'custom' ? 'inline-flex' : 'none';
+            }
+          });
+        });
+      });
+
+      document.getElementById('applySettingsBtn').onclick = applySettings;
+      document.getElementById('startFromSettingsBtn').onclick = startGame;
+      document.getElementById('headerSettingsBtn').onclick = () => {
+        stopTimer();
+        SoundFx.pauseBgm();
+        GameState.status = 'PAUSED';
+        document.getElementById('gameStatusTag').textContent = '已暂停设置';
+        switchView('viewSettings');
+      };
+      document.getElementById('headerRestartBtn').onclick = startGame;
+      document.getElementById('settleRestartBtn').onclick = startGame;
+      document.getElementById('settleToSettingsBtn').onclick = () => switchView('viewSettings');
+
+      window.addEventListener('keydown', (e) => {
+        if (GameState.status !== 'RUNNING') return;
+        const activeCell = document.querySelector('.grid-cell.active-focus');
+        if (!activeCell) return;
+
+        const parts = activeCell.id.split('_');
+        const pId = parseInt(parts[1], 10);
+        const player = GameState.players.find(p => p.info.id === pId);
+        if (!player) return;
+
+        if (e.key >= '0' && e.key <= '9') {
+          e.preventDefault();
+          player.handleKeyPress(e.key);
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          player.handleKeyPress('退格');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          player.submitAnswer();
+        }
+      });
+    }
+
+    function applySettings() {
+      if (Config.qCount === 'custom') {
+        const val = parseInt(document.getElementById('customQCountInput').value, 10);
+        Config.qCountCustom = Math.max(1, isNaN(val) ? 5 : val);
+      }
+
+      if (Config.timeLimit === 'custom') {
+        const mins = parseInt(document.getElementById('customMinutesInput').value, 10) || 0;
+        const secs = parseInt(document.getElementById('customSecondsInput').value, 10) || 0;
+        Config.timeLimitCustomSec = mins * 60 + secs;
+      }
+
+      const root = document.documentElement;
+
+      // 1. 字号与数位格尺寸
+      if (Config.fontSize === 'custom') {
+        const customPx = parseInt(document.getElementById('customFontSizeInput').value, 10);
+        Config.fontSizeCustomPx = Math.max(14, Math.min(60, isNaN(customPx) ? 24 : customPx));
+        
+        const fontVal = Config.fontSizeCustomPx;
+        const cellVal = Math.round(fontVal * 2.25);
+        root.style.setProperty('--font-scale', `${fontVal}px`);
+        root.style.setProperty('--cell-size', `${cellVal}px`);
+      } else if (Config.fontSize === 'large') {
+        root.style.setProperty('--font-scale', 'clamp(24px, 3vh, 34px)');
+        root.style.setProperty('--cell-size', 'clamp(54px, 6.2vh, 76px)');
+      } else {
+        root.style.setProperty('--font-scale', 'clamp(18px, 2.2vh, 26px)');
+        root.style.setProperty('--cell-size', 'clamp(44px, 4.8vh, 58px)');
+      }
+
+      // 2. 加粗设置
+      root.style.setProperty('--math-font-weight', Config.fontWeight === 'bold' ? 'bold' : 'normal');
+
+      // 3. 字体族设置
+      const fontMap = {
+        mono: '"Courier New", Courier, Consolas, monospace',
+        sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+        kai: '"KaiTi", "楷体", "STKaiti", "BiauKai", serif',
+        round: '"Yuanti SC", "圆体-简", "Comic Sans MS", -apple-system, sans-serif',
+        serif: '"SimSun", "宋体", "STSong", "Songti SC", Georgia, serif'
+      };
+      root.style.setProperty('--math-font-family', fontMap[Config.fontFamily] || fontMap.mono);
+
+      SoundFx.enabled = (Config.sound === 'on');
+      SoundFx.setBgmVolume(Config.bgmVolume);
+    }
+
+    function startGame() {
+      applySettings();
+      stopTimer();
+
+      GameState.status = 'RUNNING';
+      document.getElementById('gameStatusTag').textContent = '比赛进行中';
+      document.getElementById('headerRestartBtn').style.display = 'inline-flex';
+
+      const arena = document.getElementById('arenaGrid');
+      arena.innerHTML = '';
+      arena.className = `arena-grid players-${Config.playerCount}`;
+
+      const totalQuestions = Config.qCount === 'custom' ? Config.qCountCustom : Config.qCount;
+
+      let baseQuestions = [];
+      if (Config.mode === 'same') {
+        for (let i = 0; i < totalQuestions; i++) {
+          baseQuestions.push(QuestionEngine.generate(Config));
+        }
+      }
+
+      GameState.players = [];
+      for (let i = 0; i < Config.playerCount; i++) {
+        let qList = [];
+        if (Config.mode === 'same') {
+          qList = JSON.parse(JSON.stringify(baseQuestions));
+        } else {
+          for (let q = 0; q < totalQuestions; q++) {
+            qList.push(QuestionEngine.generate(Config));
+          }
+        }
+        const pCtrl = new PlayerController(PLAYER_INFO[i], qList);
+        GameState.players.push(pCtrl);
+        pCtrl.initDOM(arena);
+      }
+
+      switchView('viewArena');
+      startTimer();
+      SoundFx.playBgm();
+    }
+
+    function switchView(viewId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(viewId);
+      if (target) target.classList.add('active');
+    }
+
+    window.addEventListener('DOMContentLoaded', initGame);
+  </script>
+</body>
+</html>
