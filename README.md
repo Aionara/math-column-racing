@@ -68,13 +68,13 @@ math-column-racing/
 
 ![课堂竖式计算竞速游戏主界面](images/game-preview.png)
 
-### 游戏画面
+### 设置界面
 
 ![竖式计算游戏过程](images/gameplay.png)
 
-### 比赛结算
+### 设置界面
 
-![比赛结束后的排名界面](images/game-result.png)
+![设置界面](images/game-result.png)
 
 ## 📌 项目状态
 
