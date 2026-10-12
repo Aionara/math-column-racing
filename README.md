@@ -62,7 +62,6 @@
 math-column-racing/
 ├── index.html       # 游戏主程序
 ├── README.md        # 项目说明文档
-└── LICENSE          # 开源许可证（可选）
 ```
 ## 🎮 游戏预览
 
